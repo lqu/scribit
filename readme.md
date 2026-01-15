@@ -7,6 +7,11 @@ Scribit is a wonderful and successful crowd-sourced project, but its support end
 
 The programming is purely over-the-air (OTA), and there is no need to open the case or connect cables to USB or Serial Port.
 
+## Block Diagram
+![](images/briki.png)
+![](images/mbc-pinout.png)
+![](images/block-diagram.png)
+
 # Procedure
 ## 1. Verify Preconditions
 Assuming your Scribit is running stock firmware, when powered on its LED should glow BLUE for 2 seconds, then fast blinks WHITE continuously (5 Hz). 
