@@ -11,9 +11,9 @@ The programming is purely over-the-air (OTA), and there is no need to open the c
 ## 1. Verify Preconditions
 Assuming your Scribit is running stock firmware, when powered on its LED should glow BLUE for 2 seconds, then fast blinks WHITE continuously (5 Hz). 
 
-Your PC should also see a WIFI access point called Scribit-xxxxxx, where xxxxxx is the 2nd half of its MAC address. Connect to the AP using the default password (The default Wi-Fi password is publicly documented and can be found online.). After connection, your PC should have DHCP IP address like 192.168.240.2, and the Scribit has 192.168.240.1
+Your PC should also see a Wi-Fi access point called Scribit-xxxxxx, where xxxxxx is the 2nd half of its MAC address. Connect to the AP using the default password (The default Wi-Fi password is publicly documented and can be found online.). After connection, your PC should have DHCP IP address like 192.168.240.2, and the Scribit has 192.168.240.1
 
-Stock Scribit firmware has a web server running at TCP port 8888, allowing you to set up the unit to join your home wifi network. Test with curl, and you should see following responses.
+Stock Scribit firmware has a web server running at TCP port 8888, allowing you to set up the unit to join your home Wi-Fi network. Test with curl, and you should see following responses.
 
 
 ```
