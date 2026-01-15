@@ -160,10 +160,14 @@ Open "Tools -> MBC OTA Utility" and upload the exported binary to Scribit's ESP3
 
 File name `Firmware/ScribitESP/ScribitESP.ino.briki_mbcwb_esp32.bin`
 
+![](images/ota-2.png)
+
 ### 4.3 Upload ESP32 Storage
 Open "Tools -> MBC OTA Utility" and upload the storage binary to Scribit's ESP32 chip at 192.168.240.1. Find the file in `/tmp/arduino_build_xxxxxx`
 
 File name `/tmp/arduino_build_814948/ScribitESP.ino.partitions.bin`
+
+![](images/ota-3.png)
 
 ## 5. Verification
 According to the settings in `Firmware/ScribitESP/SIConfig.hpp`, the robot expects an MQTT server at `192.168.240.2`. Usually your PC gets that IP address. If that's not the case, and you get `192.168.240.3`, set up an alias IP.
