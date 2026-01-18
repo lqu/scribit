@@ -24,12 +24,12 @@ Run (needs port 80 -> root):
 
 Controls:
   Arrow keys / WASD : Up=both in, Down=both out, Left=leftish, Right=rightish
-  Q/E               : Left in/out
-  Z/C               : Right in/out
+  Q / E             : Left in/out
+  Z / C             : Right in/out
   [ / ]             : step down/up
   - / =             : feed down/up
   x                 : Reset N (stop)
-  ESC or Ctrl+G     : quit
+  ESC / Ctrl+G      : quit
 """
 
 from __future__ import annotations
@@ -227,11 +227,12 @@ def run_curses(app: App, step0: float, feed0: int):
 
     help_lines = [
         "Arrow keys / WASD : Up=both in, Down=both out, Left=leftish, Right=rightish",
-        "Q/E               : left in/out    |  Z/C : right in/out",
+        "Q / E             : left in/out",
+        "Z / C             : right in/out",
         "[ / ]             : step down/up",
         "- / =             : feed down/up",
         "x                 : Reset N (stop)",
-        "ESC or Ctrl+G     : quit",
+        "ESC / Ctrl+G      : quit",
         "",
         "NOTE: HTTP must be on port 80, and MQTT payload always ends with ';M18' (configurable).",
     ]
