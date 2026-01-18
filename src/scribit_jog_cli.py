@@ -29,7 +29,7 @@ Controls:
   [ / ]             : step down/up
   - / =             : feed down/up
   x                 : Reset N (stop)
-  Ctrl-C            : quit
+  ESC or Ctrl+G     : quit
 """
 
 from __future__ import annotations
@@ -231,7 +231,7 @@ def run_curses(app: App, step0: float, feed0: int):
         "[ / ]             : step down/up",
         "- / =             : feed down/up",
         "x                 : Reset N (stop)",
-        "Ctrl-C            : quit",
+        "ESC or Ctrl+G     : quit",
         "",
         "NOTE: HTTP must be on port 80, and MQTT payload always ends with ';M18' (configurable).",
     ]
@@ -332,6 +332,10 @@ def run_curses(app: App, step0: float, feed0: int):
 
             elif ch in (ord('x'), ord('X')):
                 app.reset_n()
+
+            # quit nicely: ESC
+            elif ch in (27, 7):   # 27=ESC or Ctrl+G
+                return
 
     curses.wrapper(loop)
 
