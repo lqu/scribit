@@ -195,3 +195,11 @@ Jan 14 19:56:44 myUbuntu2404 mosquitto[1692]: 1768449404: Received PUBLISH from 
 
 At this point, the open firmware is programmed successfully! Hooray!
 
+## Next steps
+
+After updating the Scribit with open firmware, refer to the **main workflow guide** for manual control and drawing on the wall:
+
+See **[`/src/readme.md`](./src/readme.md)** for:
+- manual jogging and recovery using `scribit_jog_cli.py`
+- converting SVG files to Scribit G-code using `scribit_svg_to_gcode.py`
+- drawing safely on the wall
