@@ -201,6 +201,70 @@ def sample_path_uniform_t(path: Path, n: int) -> List[complex]:
     n = max(1, n)
     return [path.point(i / n) for i in range(n + 1)]
 
+
+def split_into_continuous_subpaths(path: Path, *, eps: float = 1e-7) -> List[Path]:
+    """Split an svgpathtools.Path into continuous subpaths.
+
+    Why this exists:
+      A single SVG `<path d="...">` can contain multiple `M/m` “move-to” commands.
+      Many SVG tools emit one `<path>` element containing several disjoint subpaths.
+
+      If we treat that as one continuous stroke, the converter will occasionally
+      produce a very large pen-down jump between disjoint subpaths.
+
+    Notes:
+      - If svgpathtools provides `continuous_subpaths()`, we use it.
+      - Otherwise we fall back to splitting whenever a segment's start does not
+        match the previous segment's end (within `eps`).
+    """
+
+    # Preferred: use library helper if present.
+    f = getattr(path, "continuous_subpaths", None)
+    if callable(f):
+        try:
+            subs = f()
+            # Some versions return a generator.
+            subs = list(subs)
+            return [sp for sp in subs if len(sp) > 0]
+        except Exception:
+            # Fall back to our own splitting.
+            pass
+
+    if len(path) == 0:
+        return []
+
+    out: List[Path] = []
+    cur: List = []
+    prev_end: Optional[complex] = None
+
+    def close_enough(a: complex, b: complex) -> bool:
+        return abs(a - b) <= eps
+
+    for seg in path:
+        # svgpathtools segments have .start and .end
+        s = getattr(seg, "start", None)
+        e = getattr(seg, "end", None)
+        if s is None or e is None:
+            # Unexpected segment type: keep it in the current subpath.
+            cur.append(seg)
+            prev_end = e if e is not None else prev_end
+            continue
+
+        if prev_end is not None and not close_enough(s, prev_end):
+            # Discontinuity => start a new subpath.
+            if cur:
+                out.append(Path(*cur))
+            cur = [seg]
+        else:
+            cur.append(seg)
+
+        prev_end = e
+
+    if cur:
+        out.append(Path(*cur))
+
+    return out
+
 @dataclass(frozen=True)
 class SvgToWallMapper:
     u_center: float
@@ -424,36 +488,44 @@ def main() -> None:
     cur_xy = (wall_cx, wall_cy)
 
     for path, pen in drawable:
-        # Estimate number of samples so wall spacing is ~ step_mm
-        try:
-            length_svg = path.length(error=1e-3)
-        except TypeError:
-            length_svg = path.length()
-
-        length_wall = length_svg * scale
-        n = max(1, int(math.ceil(length_wall / max(1e-9, args.step_mm))))
-
-        pts = sample_path_uniform_t(path, n)
-        poly_wall = [mapper.map_uv(pt.real, pt.imag) for pt in pts]
+        # A single SVG <path> may contain multiple disjoint subpaths (multiple M/m).
+        # If we draw them as one continuous stroke, we'd create giant pen-down jumps.
+        subpaths = split_into_continuous_subpaths(path)
+        if not subpaths:
+            continue
 
         g_draw += gcode_pen_select_ccw(pen, args.f_z, st_draw)
 
-        # Reposition (pen-up), segmented
-        lines, cur_xy = move_xy_segmented(
-            cur_xy, poly_wall[0], args_D, args.f_travel, max_step_mm=args.travel_step_mm
-        )
-        g_draw += lines
+        for sp in subpaths:
+            # Estimate number of samples so wall spacing is ~ step_mm
+            try:
+                length_svg = sp.length(error=1e-3)
+            except TypeError:
+                length_svg = sp.length()
 
-        # Draw polyline (pen-down), already dense in wall space
-        g_draw += gcode_pen_down()
+            length_wall = length_svg * scale
+            n = max(1, int(math.ceil(length_wall / max(1e-9, args.step_mm))))
 
-        # Emit drawing as per-point deltas in LR space
-        # (we keep this as a sequence of single-step moves; step_mm controls density)
-        for xy in poly_wall[1:]:
-            line, cur_xy = wall_xy_to_lr_delta_g1(cur_xy, xy, args_D, args.f_draw)
-            g_draw.append(line)
+            pts = sample_path_uniform_t(sp, n)
+            poly_wall = [mapper.map_uv(pt.real, pt.imag) for pt in pts]
+            if len(poly_wall) < 2:
+                continue
 
-        g_draw += gcode_pen_up(pen, args.f_z, st_draw)
+            # Reposition (pen-up), segmented
+            lines, cur_xy = move_xy_segmented(
+                cur_xy, poly_wall[0], args_D, args.f_travel, max_step_mm=args.travel_step_mm
+            )
+            g_draw += lines
+
+            # Draw polyline (pen-down)
+            g_draw += gcode_pen_down()
+
+            # Emit drawing as per-point deltas in LR space
+            for xy in poly_wall[1:]:
+                line, cur_xy = wall_xy_to_lr_delta_g1(cur_xy, xy, args_D, args.f_draw)
+                g_draw.append(line)
+
+            g_draw += gcode_pen_up(pen, args.f_z, st_draw)
 
     write_lines(args.out_draw, g_draw)
 
