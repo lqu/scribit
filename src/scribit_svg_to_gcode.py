@@ -347,10 +347,10 @@ def build_argparser() -> argparse.ArgumentParser:
 
     return p
 
-def load_drawable_paths(svg_path: str, default_pen: int) -> Tuple[List[Tuple[Path, int]], Dict[str, int]]:
+def load_drawable_paths(svg_path: str, default_pen: int) -> Tuple[List[Tuple[Path, int, str]], Dict[str, int]]:
     """
     Returns:
-      drawable: list of (Path, pen_id)
+      drawable: list of (Path, pen_id, svg_id)
       color_to_pen: mapping used
     Rules:
       - Use stroke color if present and not 'none'
@@ -362,9 +362,11 @@ def load_drawable_paths(svg_path: str, default_pen: int) -> Tuple[List[Tuple[Pat
 
     color_to_pen: Dict[str, int] = {}
     next_pen = 1
-    drawable: List[Tuple[Path, int]] = []
 
-    for p, a in zip(paths, attrs):
+    drawable: List[Tuple[Path, int, str]] = []
+
+    for i, (p, a) in enumerate(zip(paths, attrs), start=1):
+
         stroke = parse_color(a.get("stroke"))
 
         if stroke is None:
@@ -379,15 +381,17 @@ def load_drawable_paths(svg_path: str, default_pen: int) -> Tuple[List[Tuple[Pat
             next_pen += 1
 
         pen = color_to_pen.get(stroke, default_pen)
-        drawable.append((p, pen))
+
+        svg_id = a.get("id") or f"path_{i}"
+        drawable.append((p, pen, svg_id))
 
     return drawable, color_to_pen
 
-def compute_svg_bbox(drawable: Iterable[Tuple[Path, int]]) -> Tuple[float, float, float, float]:
+def compute_svg_bbox(drawable: Iterable[Tuple[Path, int, str]]) -> Tuple[float, float, float, float]:
     xmin = ymin = float("inf")
     xmax = ymax = float("-inf")
     any_path = False
-    for p, _ in drawable:
+    for p, _, _ in drawable:
         any_path = True
         bx0, bx1, by0, by1 = p.bbox()
         xmin = min(xmin, bx0)
@@ -487,7 +491,9 @@ def main() -> None:
         g_draw += gcode_home_carousel(st_draw)
     cur_xy = (wall_cx, wall_cy)
 
-    for path, pen in drawable:
+    pen_down_block = 0
+    for path, pen, svg_id in drawable:
+
         # A single SVG <path> may contain multiple disjoint subpaths (multiple M/m).
         # If we draw them as one continuous stroke, we'd create giant pen-down jumps.
         subpaths = split_into_continuous_subpaths(path)
@@ -516,6 +522,13 @@ def main() -> None:
                 cur_xy, poly_wall[0], args_D, args.f_travel, max_step_mm=args.travel_step_mm
             )
             g_draw += lines
+
+            # Debug marker
+            pen_down_block += 1
+            g_draw.append(
+                f"; pen_down#{pen_down_block:03d} svg_id={svg_id} pen={pen} "
+                f"start_xy={poly_wall[0][0]:.2f},{poly_wall[0][1]:.2f}"
+            )
 
             # Draw polyline (pen-down)
             g_draw += gcode_pen_down()
